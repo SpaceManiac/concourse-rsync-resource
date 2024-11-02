@@ -6,8 +6,8 @@ cat > $SCRIPT_INPUT <&0 # STDIN params
 
 SERVER=$(jq -r '(.source.servers + [.source.server])[0]' < $SCRIPT_INPUT)
 PORT=$(jq -r '.source.port // ""' < $SCRIPT_INPUT)
-BASE_DIR=$(jq -r '.source.base_dir // ""' < $SCRIPT_INPUT)
 USER=$(jq -r '.source.user // ""' < $SCRIPT_INPUT)
+BASE_DIR=$(jq -r '.source.base_dir // ""' < $SCRIPT_INPUT)
 VERSION=$(jq -r '.version.ref // ""' < $SCRIPT_INPUT)
 
 # Default to port 22.
@@ -17,8 +17,8 @@ PORT=${PORT:-22}
 printf '%s=%s\n' \
   SERVER "$SERVER" \
   PORT "$PORT" \
-  BASE_DIR "$BASE_DIR" \
   USER "$USER" \
+  BASE_DIR "$BASE_DIR" \
   VERSION "$VERSION" \
   >&2
 
