@@ -12,7 +12,7 @@ user=$(jq -r '.source.user // ""' < $script_input)
 base_dir=$(jq -r '.source.base_dir // ""' < $script_input)
 sync_dir=$(jq -r '.params.sync_dir // ""' < $script_input)
 version=$(jq -r '.params.version // ""' < $script_input)
-readarray -d '' rsync_opts < <(jq --raw-output0 '(.params.rsync_opts // ["--partial", "--progress", "--archive", "--verbose", "--mkpath"])[]' < $script_input)
+readarray -d '' rsync_opts < <(jq --raw-output0 '(.params.rsync_opts // ["--verbose", "--archive", "--mkpath"])[]' < $script_input)
 
 if test -z "$version"; then
   # Due to `set -e`, this will correctly fail if this is a one-off build.
