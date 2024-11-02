@@ -1,65 +1,65 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC_DIR=$1
+src_dir=$1
 
-SCRIPT_INPUT='/tmp/input'
-cat > $SCRIPT_INPUT <&0 # STDIN params
+script_input='/tmp/input'
+cat > $script_input <&0 # STDIN params
 
-readarray -d '' SERVERS < <(jq --raw-output0 '(.source.servers + [.source.server])[]' < $SCRIPT_INPUT)
-PORT=$(jq -r '.source.port // ""' < $SCRIPT_INPUT)
-USER=$(jq -r '.source.user // ""' < $SCRIPT_INPUT)
-BASE_DIR=$(jq -r '.source.base_dir // ""' < $SCRIPT_INPUT)
-SYNC_DIR=$(jq -r '.params.sync_dir // ""' < $SCRIPT_INPUT)
-VERSION=$(jq -r '.params.version // ""' < $SCRIPT_INPUT)
-readarray -d '' RSYNC_OPTS < <(jq --raw-output0 '(.params.rsync_opts // ["--partial", "--progress", "--archive", "--verbose", "--mkpath"])[]' < $SCRIPT_INPUT)
+readarray -d '' servers < <(jq --raw-output0 '(.source.servers + [.source.server])[]' < $script_input)
+port=$(jq -r '.source.port // ""' < $script_input)
+user=$(jq -r '.source.user // ""' < $script_input)
+base_dir=$(jq -r '.source.base_dir // ""' < $script_input)
+sync_dir=$(jq -r '.params.sync_dir // ""' < $script_input)
+version=$(jq -r '.params.version // ""' < $script_input)
+readarray -d '' rsync_opts < <(jq --raw-output0 '(.params.rsync_opts // ["--partial", "--progress", "--archive", "--verbose", "--mkpath"])[]' < $script_input)
 
-if test -z "$VERSION"; then
+if test -z "$version"; then
   # Due to `set -e`, this will correctly fail if this is a one-off build.
-  VERSION="$BUILD_PIPELINE_NAME-$BUILD_JOB_NAME-$BUILD_NAME"
+  version="$BUILD_PIPELINE_NAME-$BUILD_JOB_NAME-$BUILD_NAME"
 fi
 
 # Default to port 22.
-PORT=${PORT:-22}
+port=${port:-22}
 
 # Combine base dir and input sync dir for partial uploads.
-if test "$SYNC_DIR"; then
-  SRC_DIR=$SRC_DIR/$SYNC_DIR
+if test "$sync_dir"; then
+  src_dir=$src_dir/$sync_dir
 fi
 
 # Combine base dir and output version.
-if jq -re '.source.disable_version_path' < $SCRIPT_INPUT >/dev/null; then
-  DEST_DIR=$BASE_DIR
+if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
+  dest_dir=$base_dir
 else
-  DEST_DIR=$BASE_DIR/$VERSION
+  dest_dir=$base_dir/$version
 fi
 
 # Print configuration results.
 {
-  printf 'SERVERS=('; printf '%q ' "${SERVERS[@]}"; printf ')\n'
+  printf 'servers=('; printf '%q ' "${servers[@]}"; printf ')\n'
   printf '%s=%s\n' \
-    PORT "$PORT" \
-    USER "$USER" \
-    BASE_DIR "$BASE_DIR" \
-    VERSION "$VERSION" \
-    SRC_DIR "$SRC_DIR" \
-    DEST_DIR "$DEST_DIR"
-  printf 'RSYNC_OPTS=('; printf '%q ' "${RSYNC_OPTS[@]}"; printf ')\n'
+    port "$port" \
+    user "$user" \
+    base_dir "$base_dir" \
+    version "$version" \
+    src_dir "$src_dir" \
+    dest_dir "$dest_dir"
+  printf 'rsync_opts=('; printf '%q ' "${rsync_opts[@]}"; printf ')\n'
 } >&2
 
 # Configure SSH.
 mkdir -p ~/.ssh
-(jq -r '.source.private_key // empty' < $SCRIPT_INPUT) > ~/.ssh/server_key
-printf "Host %s\n\tStrictHostKeyChecking no\n" "${SERVERS[@]}" > ~/.ssh/config
+(jq -r '.source.private_key // empty' < $script_input) > ~/.ssh/server_key
+printf "Host %s\n\tStrictHostKeyChecking no\n" "${servers[@]}" > ~/.ssh/config
 chmod -R 600 ~/.ssh
 eval "$(ssh-agent)" >/dev/null
 SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/null
 
 # Perform the upload.
-for SERVER in "${SERVERS[@]}"; do
+for server in "${servers[@]}"; do
   (
     set -x
-    rsync "${RSYNC_OPTS[@]}" --rsh "ssh -i ~/.ssh/server_key -p ${PORT@Q}" "$SRC_DIR/" "$USER@$SERVER:$DEST_DIR/" >&2
+    rsync "${rsync_opts[@]}" --rsh "ssh -i ~/.ssh/server_key -p ${port@Q}" "$src_dir/" "$user@$server:$dest_dir/" >&2
   )
 done
-jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$VERSION"
+jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version"
