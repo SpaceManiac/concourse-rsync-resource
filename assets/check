@@ -13,8 +13,8 @@ VERSION=$(jq -r '.version.ref // ""' < $SCRIPT_INPUT)
 # Default to port 22.
 PORT=${PORT:-22}
 
-printf "%s=%s\n" \
-  SCRIPT_INPUT "$SCRIPT_INPUT" \
+# Print configuration results.
+printf '%s=%s\n' \
   SERVER "$SERVER" \
   PORT "$PORT" \
   BASE_DIR "$BASE_DIR" \
@@ -22,17 +22,17 @@ printf "%s=%s\n" \
   VERSION "$VERSION" \
   >&2
 
+# Configure SSH.
 mkdir -p ~/.ssh
 (jq -r '.source.private_key // empty' < $SCRIPT_INPUT) > ~/.ssh/server_key
 printf "Host %s\n\tStrictHostKeyChecking no\n" "$SERVER" > ~/.ssh/config
 chmod -R 600 ~/.ssh
-
 eval "$(ssh-agent)" >/dev/null
 SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/null
 
+# Perform the directory listing.
 VERSIONS=()
-if jq -re '.source.disable_version_path' < $SCRIPT_INPUT >/dev/null
-then
+if jq -re '.source.disable_version_path' < $SCRIPT_INPUT >/dev/null; then
   # Adding an extra / here asserts that it's a directory. rsync will error if not.
   if rsync --list-only --rsh "ssh -i ~/.ssh/server_key -p ${PORT@Q}" "$BASE_DIR/" >&2; then
     DIR=${BASE_DIR##*/}
