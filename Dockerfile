@@ -1,7 +1,6 @@
-FROM alpine:edge
+FROM alpine:3.20.3
 MAINTAINER Steve Williams <mrsixw@gmail.com>
 
-RUN apk update && apk upgrade && \
-    apk add --update  bash rsync jq openssh
+RUN apk add --no-cache bash rsync jq openssh
 
 COPY ./assets/* /opt/resource/
