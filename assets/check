@@ -12,6 +12,7 @@ version=$(jq -r '.version.ref // ""' < $script_input)
 
 # Default to port 22.
 port=${port:-22}
+printf -v rsh '%q ' ssh -i ~/.ssh/server_key -p "$port"
 
 # Print configuration results.
 printf '%s=%s\n' \
@@ -34,19 +35,19 @@ SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/
 versions=()
 if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
   # Adding an extra / here asserts that it's a directory. rsync will error if not.
-  if rsync --list-only --rsh "ssh -i ~/.ssh/server_key -p ${port@Q}" "$user@$server:$base_dir/" >&2; then
+  if rsync --list-only --rsh "$rsh" "$user@$server:$base_dir/" >&2; then
     dir=${base_dir##*/}
     printf 'taking base directory as sole version: %s' "$dir" >&2
     versions+=("$dir")
   fi
 else
   # List directory, skip first line (entry for `.`), sort from oldest to newest,
-  # cut to filenames only, then read into versions.
+  # cut to filenames only, then read into $versions.
   # Lines look like: drwxrwxr-x          4,096 2024/11/01 01:23:45 filename
   # NOTE: handles spaces and printable characters fine, but chokes on
   # backslashes or nonprintable characters that get octal-escaped like `\#000`.
   readarray -t versions < <(
-    rsync --list-only --rsh "ssh -i ~/.ssh/server_key -p ${port@Q}" "$user@$server:$base_dir/" \
+    rsync --list-only --rsh "$rsh" "$user@$server:$base_dir/" \
     | tee >(cat >&2) \
     | { read -r; cat; } \
     | sort -k 3,4 \

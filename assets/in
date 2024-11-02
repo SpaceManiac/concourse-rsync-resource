@@ -19,6 +19,7 @@ fi
 
 # Default to port 22.
 port=${port:-22}
+printf -v rsh '%q ' ssh -i ~/.ssh/server_key -p "$port"
 
 # Combine base dir and selected version.
 if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
@@ -49,6 +50,6 @@ SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/
 # Perform the download.
 (
   set -x
-  rsync --partial --progress --archive --rsh "ssh -i ~/.ssh/server_key -p ${port@Q}" "$user@$server:$src_dir/" "$dest_dir/" >&2
+  rsync --verbose --archive --rsh "$rsh" "$user@$server:$src_dir/" "$dest_dir/" >&2
 )
 jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version"

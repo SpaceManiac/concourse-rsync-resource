@@ -21,6 +21,7 @@ fi
 
 # Default to port 22.
 port=${port:-22}
+printf -v rsh '%q ' ssh -i ~/.ssh/server_key -p "$port"
 
 # Combine base dir and input sync dir for partial uploads.
 if test "$sync_dir"; then
@@ -59,7 +60,7 @@ SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/
 for server in "${servers[@]}"; do
   (
     set -x
-    rsync "${rsync_opts[@]}" --rsh "ssh -i ~/.ssh/server_key -p ${port@Q}" "$src_dir/" "$user@$server:$dest_dir/" >&2
+    rsync "${rsync_opts[@]}" --rsh "$rsh" "$src_dir/" "$user@$server:$dest_dir/" >&2
   )
 done
 jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version"
