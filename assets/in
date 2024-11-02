@@ -51,4 +51,4 @@ SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add ~/.ssh/server_key >/dev/
   set -x
   rsync --partial --progress --archive --rsh "ssh -i ~/.ssh/server_key -p ${PORT@Q}" "$USER@$SERVER:$SRC_DIR/" "$DEST_DIR/" >&2
 )
-jq '{version: {ref: $ARGS.positional[0]}}' "$VERSION"
+jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$VERSION"
