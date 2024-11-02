@@ -25,10 +25,10 @@ printf '%s=%s\n' \
 
 # Configure SSH.
 mkdir -p ~/.ssh
-printf "Host %s\n\tStrictHostKeyChecking no\n" "$server" > ~/.ssh/config
-chmod -R 600 ~/.ssh
+chmod 600 ~/.ssh
 eval "$(ssh-agent)" >/dev/null
-(jq -r '.source.private_key // empty' < $script_input) | SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add - >/dev/null
+jq -r '.source.known_hosts // empty' < $script_input > ~/.ssh/known_hosts
+jq -r '.source.private_key // empty' < $script_input | SSH_ASKPASS=/opt/resource/askpass.sh DISPLAY='' ssh-add - >/dev/null
 
 # Perform the directory listing.
 versions=()
