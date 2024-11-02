@@ -12,7 +12,7 @@ USER=$(jq -r '.source.user // ""' < $SCRIPT_INPUT)
 BASE_DIR=$(jq -r '.source.base_dir // ""' < $SCRIPT_INPUT)
 SYNC_DIR=$(jq -r '.params.sync_dir // ""' < $SCRIPT_INPUT)
 VERSION=$(jq -r '.params.version // ""' < $SCRIPT_INPUT)
-readarray -d '' RSYNC_OPTS < <(jq --raw-output0 '(.params.rsync_opts // ["--partial", "--progress", "--archive", "--verbose"])[]' < $SCRIPT_INPUT)
+readarray -d '' RSYNC_OPTS < <(jq --raw-output0 '(.params.rsync_opts // ["--partial", "--progress", "--archive", "--verbose", "--mkpath"])[]' < $SCRIPT_INPUT)
 
 if test -z "$VERSION"; then
   # Due to `set -e`, this will correctly fail if this is a one-off build.
@@ -35,16 +35,17 @@ else
 fi
 
 # Print configuration results.
-printf 'SERVERS=('; printf '%q ' "${SERVERS[@]}"; printf ')\n'
-printf '%s=%s\n' \
-  PORT "$PORT" \
-  USER "$USER" \
-  BASE_DIR "$BASE_DIR" \
-  VERSION "$VERSION" \
-  SRC_DIR "$SRC_DIR" \
-  DEST_DIR "$DEST_DIR" \
-  >&2
-printf 'RSYNC_OPTS=('; printf '%q ' "${RSYNC_OPTS[@]}"; printf ')\n'
+{
+  printf 'SERVERS=('; printf '%q ' "${SERVERS[@]}"; printf ')\n'
+  printf '%s=%s\n' \
+    PORT "$PORT" \
+    USER "$USER" \
+    BASE_DIR "$BASE_DIR" \
+    VERSION "$VERSION" \
+    SRC_DIR "$SRC_DIR" \
+    DEST_DIR "$DEST_DIR"
+  printf 'RSYNC_OPTS=('; printf '%q ' "${RSYNC_OPTS[@]}"; printf ')\n'
+} >&2
 
 # Configure SSH.
 mkdir -p ~/.ssh
@@ -61,3 +62,4 @@ for SERVER in "${SERVERS[@]}"; do
     rsync "${RSYNC_OPTS[@]}" --rsh "ssh -i ~/.ssh/server_key -p ${PORT@Q}" "$SRC_DIR/" "$USER@$SERVER:$DEST_DIR/" >&2
   )
 done
+jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$VERSION"
