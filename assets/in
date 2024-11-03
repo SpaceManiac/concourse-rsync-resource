@@ -13,7 +13,7 @@ base_dir=$(jq -r '.source.base_dir // ""' < $script_input)
 version=$(jq -r '.version.ref // ""' < $script_input)
 
 if test -z "$version"; then
-  printf 'ERROR: No .version.ref was supplied.' >&2
+  printf 'ERROR: no .version.ref was supplied\n' >&2
   exit 1
 fi
 
@@ -24,8 +24,10 @@ printf -v rsh '%q ' ssh -p "$port"
 # Combine base dir and selected version.
 if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
   src_dir=$base_dir
+  version_alt=${base_dir##*/}
 else
   src_dir=$base_dir/$version
+  version_alt=$version
 fi
 
 # Print configuration results.
@@ -51,4 +53,4 @@ jq -r '.source.private_key // empty' < $script_input | SSH_ASKPASS=/opt/resource
   set -x
   rsync --verbose --archive --rsh "$rsh" "$user@$server:$src_dir/" "$dest_dir/" >&2
 )
-jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version"
+jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version_alt"

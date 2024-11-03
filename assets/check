@@ -36,7 +36,7 @@ if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
   # Adding an extra / here asserts that it's a directory. rsync will error if not.
   if rsync --list-only --rsh "$rsh" "$user@$server:$base_dir/" >&2; then
     dir=${base_dir##*/}
-    printf 'taking base directory as sole version: %s' "$dir" >&2
+    printf 'taking base directory as sole version: %s\n' "$dir" >&2
     versions+=("$dir")
   fi
 else

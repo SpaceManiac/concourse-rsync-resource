@@ -31,8 +31,10 @@ fi
 # Combine base dir and output version.
 if jq -re '.source.disable_version_path' < $script_input >/dev/null; then
   dest_dir=$base_dir
+  version_alt=${base_dir##*/}
 else
   dest_dir=$base_dir/$version
+  version_alt=$version
 fi
 
 # Print configuration results.
@@ -62,4 +64,4 @@ for server in "${servers[@]}"; do
     rsync "${rsync_opts[@]}" --rsh "$rsh" "$src_dir/" "$user@$server:$dest_dir/" >&2
   )
 done
-jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version"
+jq -n '{version: {ref: $ARGS.positional[0]}}' --args "$version_alt"
